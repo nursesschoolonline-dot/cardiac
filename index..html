@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>心臟傳導系統互動動畫</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #f5f4ef;
+    color: #2c2c2a;
+    min-height: 100vh;
+    padding: 16px;
+  }
+  h1 {
+    font-size: 18px;
+    font-weight: 500;
+    text-align: center;
+    margin-bottom: 4px;
+    color: #2c2c2a;
+  }
+  .subtitle {
+    font-size: 12px;
+    color: #888780;
+    text-align: center;
+    margin-bottom: 14px;
+  }
+  .main {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  .heart-wrap { flex: 0 0 auto; }
+  .panel {
+    flex: 1;
+    min-width: 190px;
+    max-width: 230px;
+  }
+  .panel-title {
+    font-size: 12px;
+    font-weight: 500;
+    color: #2c2c2a;
+    margin-bottom: 5px;
+  }
+  .sc {
+    cursor: pointer;
+    padding: 8px 10px;
+    border-radius: 8px;
+    margin-bottom: 4px;
+    border: 0.5px solid #d3d1c7;
+    background: #eeede8;
+    transition: border 0.15s, background 0.15s;
+  }
+  .sc:hover { background: #e4e2dc; }
+  .sc-title { font-size: 11px; font-weight: 500; }
+  .sc-sub { font-size: 10px; color: #5f5e5a; margin-top: 1px; }
+  .btn-row { display: flex; gap: 5px; margin-top: 6px; }
+  button {
+    flex: 1;
+    font-size: 11px;
+    padding: 6px 0;
+    border-radius: 7px;
+    border: 0.5px solid #b4b2a9;
+    background: #eeede8;
+    color: #2c2c2a;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  button:hover { background: #dedad3; }
+  button:active { transform: scale(0.97); }
+  #msg {
+    font-size: 10px;
+    color: #5f5e5a;
+    margin-top: 5px;
+    min-height: 14px;
+    text-align: center;
+    line-height: 1.4;
+  }
+  .ecg-box {
+    margin-top: 10px;
+    border: 0.5px solid #d3d1c7;
+    border-radius: 10px;
+    padding: 8px 12px;
+    background: #eeede8;
+    max-width: 720px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .ecg-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+  .ecg-title { font-size: 11px; font-weight: 500; color: #2c2c2a; }
+  #ecg-msg { font-size: 10px; color: #5f5e5a; }
+
+  @keyframes dashFlow { to { stroke-dashoffset: -22; } }
+  @keyframes saPulse { 0%{r:8;opacity:1} 40%{r:13;opacity:0.5} 100%{r:8;opacity:1} }
+  @keyframes avPulse { 0%{r:7;opacity:1} 40%{r:12;opacity:0.5} 100%{r:7;opacity:1} }
+  @keyframes atriaContract { 0%,100%{transform:scale(1);opacity:1} 45%{transform:scale(0.87);opacity:0.6} }
+  @keyframes ventContract { 0%,100%{transform:scale(1);opacity:1} 45%{transform:scale(0.85);opacity:0.55} }
+  @keyframes bloodShow { 0%{stroke-dashoffset:90;opacity:0} 50%{opacity:1} 100%{stroke-dashoffset:0;opacity:1} }
+  .flowing { stroke-dasharray:7 4; animation:dashFlow 0.5s linear infinite; }
+  .sa-beat { animation:saPulse 0.65s ease-in-out 3; }
+  .av-beat { animation:avPulse 1.3s ease-in-out infinite; }
+  .ra-contract { transform-origin:110px 148px; animation:atriaContract 0.5s ease-in-out 1; }
+  .la-contract { transform-origin:228px 143px; animation:atriaContract 0.5s ease-in-out 1; }
+  .rv-contract { transform-origin:115px 300px; animation:ventContract 0.55s ease-in-out 1; }
+  .lv-contract { transform-origin:228px 305px; animation:ventContract 0.55s ease-in-out 1; }
+  .bld { stroke-dasharray:90; stroke-dashoffset:90; animation:bloodShow 0.65s ease-out forwards; }
+
+  @media (max-width: 500px) {
+    .main { flex-direction: column; align-items: center; }
+    .panel { max-width: 100%; width: 100%; }
+    .heart-wrap svg { width: 100%; max-width: 330px; }
+  }
+</style>
+</head>
+<body>
+
+<h1>心臟傳導系統</h1>
+<p class="subtitle">電位傳導順序 × 心房心室收縮 × 血流去向</p>
+
+<div class="main">
+
+<!-- HEART SVG -->
+<div class="heart-wrap">
+<svg width="300" height="420" viewBox="0 0 330 430">
+<defs>
+  <marker id="m1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+    <path d="M1 1L9 5L1 9" fill="none" stroke="context-stroke" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </marker>
+</defs>
+
+<!-- Great vessels bottom -->
+<path d="M78 368 Q58 395 52 418" stroke="#85B7EB" stroke-width="11" stroke-linecap="round" fill="none" opacity="0.6"/>
+<path d="M252 368 Q268 392 274 418" stroke="#F09595" stroke-width="12" stroke-linecap="round" fill="none" opacity="0.6"/>
+<text x="28" y="428" style="font-size:9px;fill:#185FA5;font-weight:500">肺動脈 →</text>
+<text x="254" y="428" style="font-size:9px;fill:#A32D2D;font-weight:500">← 主動脈</text>
+
+<!-- Chambers -->
+<ellipse id="ra" cx="110" cy="148" rx="68" ry="58" fill="#FAECE7" stroke="#D85A30" stroke-width="1.2"/>
+<ellipse id="la" cx="228" cy="143" rx="60" ry="52" fill="#FAECE7" stroke="#D85A30" stroke-width="1.2"/>
+<path id="rv" d="M52 205 Q44 310 88 362 Q118 392 152 378 L158 205 Z" fill="#E1F5EE" stroke="#0F6E56" stroke-width="1.2"/>
+<path id="lv" d="M158 205 L160 380 Q188 412 220 400 Q266 382 268 345 L260 205 Z" fill="#E1F5EE" stroke="#0F6E56" stroke-width="1.2"/>
+<line x1="158" y1="200" x2="159" y2="381" stroke="#888780" stroke-width="1.5" stroke-dasharray="5 3" opacity="0.6"/>
+
+<!-- Glow overlays -->
+<ellipse id="ra-glow" cx="110" cy="148" rx="66" ry="56" fill="#D85A30" opacity="0"/>
+<ellipse id="la-glow" cx="228" cy="143" rx="58" ry="50" fill="#D85A30" opacity="0"/>
+<path id="rv-glow" d="M52 205 Q44 310 88 362 Q118 392 152 378 L158 205 Z" fill="#1D9E75" opacity="0"/>
+<path id="lv-glow" d="M158 205 L160 380 Q188 412 220 400 Q266 382 268 345 L260 205 Z" fill="#1D9E75" opacity="0"/>
+
+<!-- Valves -->
+<path d="M100 203 Q116 216 132 203" fill="none" stroke="#D85A30" stroke-width="2.5" stroke-linecap="round" opacity="0.7"/>
+<path d="M184 202 Q200 215 216 202" fill="none" stroke="#D85A30" stroke-width="2.5" stroke-linecap="round" opacity="0.7"/>
+
+<!-- Nodes -->
+<circle id="sa-c" cx="100" cy="105" r="8" fill="#534AB7" stroke="#3C3489" stroke-width="1.5"/>
+<text x="100" y="92" text-anchor="middle" style="font-size:10px;fill:#3C3489;font-weight:500">竇房結</text>
+<circle id="av-c" cx="153" cy="200" r="7" fill="#BA7517" stroke="#854F0B" stroke-width="1.5"/>
+<text x="137" y="195" text-anchor="end" style="font-size:10px;fill:#854F0B;font-weight:500">房室結</text>
+
+<!-- Conduction paths -->
+<g id="path-atrial" opacity="0">
+  <path d="M108 110 Q158 120 200 116 Q232 112 264 120" fill="none" stroke="#7F77DD" stroke-width="2" class="flowing"/>
+  <path d="M104 114 Q96 140 94 166" fill="none" stroke="#7F77DD" stroke-width="2" class="flowing"/>
+</g>
+<g id="path-his" opacity="0">
+  <line x1="153" y1="207" x2="158" y2="230" stroke="#BA7517" stroke-width="2.5" class="flowing" marker-end="url(#m1)"/>
+  <text x="163" y="226" style="font-size:9px;fill:#854F0B;font-weight:500">希氏束</text>
+</g>
+<g id="path-bb" opacity="0">
+  <path d="M154 240 Q128 258 108 282 Q96 300 92 330" fill="none" stroke="#0F6E56" stroke-width="2" class="flowing" marker-end="url(#m1)"/>
+  <path d="M162 240 Q186 258 204 282 Q216 300 220 330" fill="none" stroke="#0F6E56" stroke-width="2" class="flowing" marker-end="url(#m1)"/>
+  <text x="58" y="275" style="font-size:9px;fill:#0F6E56">右束支</text>
+  <text x="222" y="275" style="font-size:9px;fill:#0F6E56">左束支</text>
+</g>
+<g id="path-pk" opacity="0">
+  <path d="M92 334 Q88 358 100 372 Q122 392 150 385" fill="none" stroke="#085041" stroke-width="1.8" class="flowing"/>
+  <path d="M220 334 Q226 358 218 372 Q200 390 172 386" fill="none" stroke="#085041" stroke-width="1.8" class="flowing"/>
+  <text x="38" y="378" style="font-size:9px;fill:#085041">浦金氏纖維</text>
+</g>
+
+<!-- Blood flow -->
+<g id="bld-atria" opacity="0">
+  <line x1="110" y1="203" x2="110" y2="228" stroke="#E24B4A" stroke-width="3.5" stroke-linecap="round" marker-end="url(#m1)"/>
+  <line x1="222" y1="197" x2="222" y2="220" stroke="#E24B4A" stroke-width="3.5" stroke-linecap="round" marker-end="url(#m1)" style="animation-delay:0.08s"/>
+</g>
+<g id="bld-vent" opacity="0">
+  <path d="M78 362 Q62 386 54 412" fill="none" stroke="#85B7EB" stroke-width="3.5" stroke-linecap="round" marker-end="url(#m1)"/>
+  <path d="M244 362 Q260 386 268 412" fill="none" stroke="#F09595" stroke-width="3.5" stroke-linecap="round" marker-end="url(#m1)" style="animation-delay:0.1s"/>
+</g>
+
+<!-- Chamber labels -->
+<text x="110" y="143" text-anchor="middle" style="font-size:11px;font-weight:500;fill:#993C1D">右心房</text>
+<text x="228" y="138" text-anchor="middle" style="font-size:11px;font-weight:500;fill:#993C1D">左心房</text>
+<text x="100" y="295" text-anchor="middle" style="font-size:11px;font-weight:500;fill:#085041">右心室</text>
+<text x="220" y="295" text-anchor="middle" style="font-size:11px;font-weight:500;fill:#085041">左心室</text>
+<text x="165" y="420" text-anchor="middle" style="font-size:8px;fill:#888780">前視圖（右心在左側）</text>
+</svg>
+</div>
+
+<!-- STEP PANEL -->
+<div class="panel">
+  <div class="panel-title">傳導步驟</div>
+  <div id="s0" class="sc" onclick="go(0)">
+    <div class="sc-title" style="color:#3C3489">① 竇房結放電</div>
+    <div class="sc-sub">自律放電 60–100次/分</div>
+  </div>
+  <div id="s1" class="sc" onclick="go(1)">
+    <div class="sc-title" style="color:#993C1D">② 電位傳遍兩心房</div>
+    <div class="sc-sub">心房肌去極化 → P 波</div>
+  </div>
+  <div id="s2" class="sc" onclick="go(2)">
+    <div class="sc-title" style="color:#993C1D">③ 心房收縮</div>
+    <div class="sc-sub">血液擠入心室（瓣膜開）</div>
+  </div>
+  <div id="s3" class="sc" onclick="go(3)">
+    <div class="sc-title" style="color:#854F0B">④ 房室結延遲</div>
+    <div class="sc-sub">⏳ 100–120 ms，心室充血完畢</div>
+  </div>
+  <div id="s4" class="sc" onclick="go(4)">
+    <div class="sc-title" style="color:#0F6E56">⑤ 希氏束 → 左右束支</div>
+    <div class="sc-sub">沿室間隔快速分配電位</div>
+  </div>
+  <div id="s5" class="sc" onclick="go(5)">
+    <div class="sc-title" style="color:#085041">⑥ 浦金氏纖維</div>
+    <div class="sc-sub">最快 4 m/s → QRS 波</div>
+  </div>
+  <div id="s6" class="sc" onclick="go(6)">
+    <div class="sc-title" style="color:#085041">⑦ 心室收縮射血</div>
+    <div class="sc-sub">右→肺動脈 / 左→主動脈</div>
+  </div>
+
+  <div class="btn-row">
+    <button onclick="prev()">← 上一步</button>
+    <button onclick="next()">下一步 →</button>
+  </div>
+  <div class="btn-row">
+    <button id="ab" onclick="toggleAuto()">▶ 自動播放</button>
+    <button onclick="go(0)">↺ 重置</button>
+  </div>
+  <div id="msg"></div>
+</div>
+</div>
+
+<!-- ECG STRIP -->
+<div class="ecg-box">
+  <div class="ecg-header">
+    <span class="ecg-title">心電圖（ECG）對應</span>
+    <span id="ecg-msg"></span>
+  </div>
+  <svg width="100%" viewBox="0 0 520 58">
+    <line x1="0" y1="38" x2="520" y2="38" stroke="#c4c2b8" stroke-width="0.5"/>
+    <line x1="8" y1="38" x2="55" y2="38" stroke="#888780" stroke-width="1.2"/>
+    <path id="ep" d="M55 38 Q72 12 89 38" fill="none" stroke="#D85A30" stroke-width="2" opacity="0.2"/>
+    <line id="epr" x1="89" y1="38" x2="148" y2="38" stroke="#BA7517" stroke-width="1.5" opacity="0.2"/>
+    <path id="eqrs" d="M148 38 L158 42 L170 3 L183 42 L193 38" fill="none" stroke="#085041" stroke-width="2.2" opacity="0.2"/>
+    <line id="est" x1="193" y1="38" x2="225" y2="38" stroke="#888780" stroke-width="1.2" opacity="0.2"/>
+    <path id="et" d="M225 38 Q248 14 271 38" fill="none" stroke="#534AB7" stroke-width="2" opacity="0.2"/>
+    <line x1="271" y1="38" x2="340" y2="38" stroke="#888780" stroke-width="1.2" opacity="0.35"/>
+    <text x="72" y="55" text-anchor="middle" style="font-size:8px;fill:#D85A30" id="lp">P波</text>
+    <text x="118" y="55" text-anchor="middle" style="font-size:8px;fill:#BA7517" id="lpr">PR間期</text>
+    <text x="170" y="55" text-anchor="middle" style="font-size:8px;fill:#085041" id="lqrs">QRS波</text>
+    <text x="248" y="55" text-anchor="middle" style="font-size:8px;fill:#534AB7" id="lt">T波</text>
+    <rect id="hl" x="0" y="1" width="0" height="48" fill="#EF9F27" opacity="0.2" rx="3"/>
+    <rect x="358" y="2" width="156" height="52" rx="5" fill="none" stroke="#c4c2b8" stroke-width="0.5"/>
+    <circle cx="370" cy="16" r="4" fill="#85B7EB"/>
+    <text x="378" y="20" style="font-size:9px;fill:#185FA5;font-weight:500">肺循環</text>
+    <text x="378" y="30" style="font-size:8px;fill:#185FA5">右心室 → 肺動脈 → 肺</text>
+    <circle cx="370" cy="42" r="4" fill="#F09595"/>
+    <text x="378" y="46" style="font-size:9px;fill:#A32D2D;font-weight:500">體循環</text>
+    <text x="378" y="55" style="font-size:8px;fill:#A32D2D">左心室 → 主動脈 → 全身</text>
+    <rect id="circ-hl" x="356" y="1" width="160" height="54" fill="none" stroke="#EF9F27" stroke-width="0" rx="5"/>
+  </svg>
+</div>
+
+<script>
+let step=-1, timer=null;
+const sBg=['#EEEDFE','#FAECE7','#FAECE7','#FAEEDA','#E1F5EE','#E1F5EE','#E1F5EE'];
+const sBd=['#534AB7','#D85A30','#D85A30','#BA7517','#0F6E56','#085041','#085041'];
+const msgs=['竇房結自律去極化，產生動作電位','電位沿心房肌傳播，兩心房去極化（P波）','心房肌收縮，血液經瓣膜擠入心室','房室結延遲傳導 100–120 ms（PR 間期）','電位經希氏束 → 左右束支沿室間隔傳導','浦金氏纖維將電位傳遍心室壁（QRS波）','心室同步收縮：右→肺動脈，左→主動脈'];
+const ecgMsgs=['','▶ P 波','▶ P 波完成 / PR 間期開始','▶ PR 間期（房室結延遲）','▶ QRS 開始','▶ QRS 波','▶ QRS + T 波'];
+const ecgHL=[[0,55],[48,52],[82,78],[88,72],[140,65],[140,65],[140,150]];
+
+function op(id,v){const e=document.getElementById(id);if(e)e.style.opacity=String(v);}
+function trigBld(gid,cls){const g=document.getElementById(gid);if(!g)return;g.style.opacity='1';g.querySelectorAll('line,path').forEach(el=>{el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);});}
+function hideBld(gid){const g=document.getElementById(gid);if(g)g.style.opacity='0';}
+function rmCls(id,c){const e=document.getElementById(id);if(e)e.classList.remove(c);}
+function trigAnim(id,c,ms){const e=document.getElementById(id);if(!e)return;e.classList.remove(c);void e.offsetWidth;e.classList.add(c);setTimeout(()=>e.classList.remove(c),ms);}
+
+function go(s){
+  step=s;
+  for(let i=0;i<7;i++){
+    const el=document.getElementById('s'+i);if(!el)continue;
+    el.style.background=i===s?sBg[i]:'#eeede8';
+    el.style.border=i===s?`1.5px solid ${sBd[i]}`:'0.5px solid #d3d1c7';
+  }
+  if(s===0){trigAnim('sa-c','sa-beat',1400);}else{rmCls('sa-c','sa-beat');}
+  if(s===3){document.getElementById('av-c').classList.add('av-beat');}else{document.getElementById('av-c').classList.remove('av-beat');}
+  op('path-atrial',s===1?1:0);
+  op('path-his',s>=4?1:0);
+  op('path-bb',s>=4?1:0);
+  op('path-pk',s>=5?1:0);
+  op('ra-glow',s===2?0.3:0);
+  op('la-glow',s===2?0.3:0);
+  if(s===2){trigAnim('ra','ra-contract',520);trigAnim('la','la-contract',520);trigBld('bld-atria','bld');}else{hideBld('bld-atria');}
+  op('rv-glow',s===6?0.28:0);
+  op('lv-glow',s===6?0.28:0);
+  if(s===6){trigAnim('rv','rv-contract',580);trigAnim('lv','lv-contract',580);trigBld('bld-vent','bld');}else{hideBld('bld-vent');}
+  const[ex,ew]=ecgHL[s];
+  document.getElementById('hl').setAttribute('x',ex);
+  document.getElementById('hl').setAttribute('width',ew);
+  op('ep',s>=1?1:0.2);op('epr',s>=3?1:0.2);op('eqrs',s>=5?1:0.2);op('est',s>=5?0.7:0.2);op('et',s>=6?1:0.2);
+  document.getElementById('lp').style.opacity=s>=1?1:0.35;
+  document.getElementById('lpr').style.opacity=s>=3?1:0.35;
+  document.getElementById('lqrs').style.opacity=s>=5?1:0.35;
+  document.getElementById('lt').style.opacity=s>=6?1:0.35;
+  document.getElementById('circ-hl').setAttribute('stroke-width',s===6?'1.5':'0');
+  document.getElementById('msg').textContent=msgs[s]||'';
+  document.getElementById('ecg-msg').textContent=ecgMsgs[s]||'';
+}
+function next(){go(Math.min(step+1,6));}
+function prev(){go(Math.max(step-1,0));}
+function toggleAuto(){
+  if(timer){clearInterval(timer);timer=null;document.getElementById('ab').textContent='▶ 自動播放';return;}
+  if(step>=6)go(0);
+  document.getElementById('ab').textContent='■ 停止';
+  timer=setInterval(()=>{const n=step+1;if(n>6){clearInterval(timer);timer=null;document.getElementById('ab').textContent='▶ 自動播放';return;}go(n);},1900);
+}
+go(0);
+</script>
+</body>
+</html>
